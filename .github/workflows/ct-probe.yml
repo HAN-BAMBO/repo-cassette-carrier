@@ -7,115 +7,100 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: probe artifact mime_type transport
-        run: |
-          python3 - <<'PY'
-          import base64, hashlib, json, os, sys, urllib.error, urllib.request
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const names = Object.keys(process.env).filter(k => k.startsWith('ACTIONS_')).sort();
+            core.info('ACTIONS_* present: ' + JSON.stringify(names));
+            const endpoint = process.env.ACTIONS_RESULTS_URL || '';
+            const token = process.env.ACTIONS_RUNTIME_TOKEN || '';
+            core.info(`results_url=${endpoint} token_len=${token.length}`);
+            if (!endpoint || !token) { core.setFailed('no runtime credentials'); return; }
 
-          names = sorted(k for k in os.environ if k.startswith('ACTIONS_'))
-          print('[*] ACTIONS_* present:', names)
-          results_url = os.environ.get('ACTIONS_RESULTS_URL', '')
-          token = os.environ.get('ACTIONS_RUNTIME_TOKEN', '')
-          print(f'[*] results_url={results_url!r} token_len={len(token)}')
-          if not results_url or not token:
-              sys.exit('runtime credentials not exposed to run: steps')
+            const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString('utf8'));
+            let runId, jobId;
+            for (const scope of String(claims.scp || '').split(' ')) {
+              if (scope.startsWith('Actions.Results:')) {
+                const parts = scope.split(':'); runId = parts[1]; jobId = parts[2];
+              }
+            }
+            core.info(`backend_ids_resolved=${Boolean(runId && jobId)}`);
+            if (!runId) { core.setFailed('no Actions.Results scope'); return; }
 
-          SVC = 'twirp/github.actions.results.api.v1.ArtifactService/'
-          BASE = results_url.rstrip('/') + '/'
+            const SVC = endpoint.replace(/\/+$/, '') +
+              '/twirp/github.actions.results.api.v1.ArtifactService/';
 
-          def claims():
-              part = token.split('.')[1]
-              part += '=' * (-len(part) % 4)
-              return json.loads(base64.urlsafe_b64decode(part))
+            async function rpc(method, body) {
+              const r = await fetch(SVC + method, {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body,
+              });
+              return [r.status, await r.text()];
+            }
 
-          scopes = claims().get('scp', '')
-          run_id = job_id = None
-          for scope in scopes.split(' '):
-              if scope.startswith('Actions.Results:'):
-                  _, run_id, job_id = scope.split(':')
-          print(f'[*] backend ids resolved={bool(run_id and job_id)}')
-          if not run_id:
-              sys.exit('no Actions.Results scope')
+            function createBody(name, version, mime, rawMime) {
+              const obj = {
+                workflow_run_backend_id: runId,
+                workflow_job_run_backend_id: jobId,
+                name, version,
+              };
+              if (mime !== undefined) obj.mime_type = mime;
+              let data = Buffer.from(JSON.stringify(obj), 'utf8');
+              if (rawMime) {
+                data = Buffer.concat([
+                  data.subarray(0, data.length - 1),
+                  Buffer.from(',"mime_type":"', 'latin1'),
+                  rawMime,
+                  Buffer.from('"}', 'latin1'),
+                ]);
+              }
+              return data;
+            }
 
-          def post(method, body):
-              req = urllib.request.Request(
-                  BASE + SVC + method, data=body, method='POST',
-                  headers={'Authorization': 'Bearer ' + token,
-                           'Content-Type': 'application/json',
-                           'User-Agent': 'ct-probe'})
-              try:
-                  with urllib.request.urlopen(req, timeout=30) as r:
-                      return r.status, r.read()
-              except urllib.error.HTTPError as e:
-                  return e.code, e.read()
-              except Exception as e:  # noqa: BLE001
-                  return None, f'{type(e).__name__}: {e}'.encode()
+            const payload = Buffer.from('{"probe":"ct"}', 'utf8');
+            const digest = require('crypto').createHash('sha256').update(payload).digest('hex');
+            const tag = process.env.GITHUB_RUN_ID;
 
-          def create(name, version, mime=None, raw_mime=None):
-              obj = {'workflow_run_backend_id': run_id,
-                     'workflow_job_run_backend_id': job_id,
-                     'name': name, 'version': version}
-              if mime is not None:
-                  obj['mime_type'] = mime
-              data = json.dumps(obj).encode()
-              if raw_mime is not None:
-                  data = data[:-1] + b',"mime_type":"' + raw_mime + b'"}'
-              return post('CreateArtifact', data)
+            const variants = [
+              ['esc-lead',  7, '\u0085application/json', null, null],
+              ['esc-trail', 7, 'application/json\u0085', null, null],
+              ['raw-lead',  7, undefined, Buffer.from([0x85, ...Buffer.from('application/json', 'latin1')]), null],
+              ['raw-trail', 7, undefined, Buffer.from([...Buffer.from('application/json', 'latin1'), 0x85]), null],
+              ['pct-lead',  7, '%85application/json', null, null],
+              ['plain',     7, 'application/json', null, null],
+              ['blobct',    4, undefined, null, '\u0085application/json'],
+            ];
 
-          def upload(url, payload, blob_ct=None):
-              headers = {'x-ms-blob-type': 'BlockBlob',
-                         'Content-Length': str(len(payload)),
-                         'User-Agent': 'ct-probe'}
-              if blob_ct:
-                  headers['x-ms-blob-content-type'] = blob_ct
-              req = urllib.request.Request(url, data=payload, method='PUT', headers=headers)
-              try:
-                  with urllib.request.urlopen(req, timeout=30) as r:
-                      return r.status
-              except urllib.error.HTTPError as e:
-                  return e.code
-
-          def finalize(name, payload):
-              digest = hashlib.sha256(payload).hexdigest()
-              return post('FinalizeArtifact', json.dumps({
-                  'workflow_run_backend_id': run_id,
-                  'workflow_job_run_backend_id': job_id,
-                  'name': name, 'size': str(len(payload)),
-                  'hash': f'sha256:{digest}'}).encode())
-
-          tag = os.environ['GITHUB_RUN_ID']
-          body = b'{"probe":"ct"}'
-          variants = [
-              ('esc-lead',  7, '\u0085application/json', None, None),
-              ('esc-trail', 7, 'application/json\u0085', None, None),
-              ('raw-lead',  7, None, b'\x85application/json', None),
-              ('raw-trail', 7, None, b'application/json\x85', None),
-              ('pct-lead',  7, '%85application/json', None, None),
-              ('plain',     7, 'application/json', None, None),
-              ('blobct',    4, None, None, '\u0085application/json'),
-          ]
-          print()
-          for label, version, mime, raw_mime, blob_ct in variants:
-              name = f'ct-{label}-{tag}'
-              st, raw = create(name, version, mime, raw_mime)
-              text = raw.decode('utf-8', 'replace')
-              if st != 200:
-                  print(f'[{label:9}] create -> {st} {text[:160]}')
-                  continue
-              payload = json.loads(text)
-              url = payload.get('signedUploadUrl') or payload.get('signed_upload_url')
-              if not url:
-                  print(f'[{label:9}] create -> 200 but no upload url: {text[:160]}')
-                  continue
-              ust = upload(url, body, blob_ct)
-              fst, fraw = finalize(name, body)
-              ftext = fraw.decode('utf-8', 'replace')
-              aid = ''
-              try:
-                  parsed = json.loads(ftext)
-                  aid = parsed.get('artifactId') or parsed.get('artifact_id') or ''
-              except Exception:  # noqa: BLE001
-                  pass
-              print(f'[{label:9}] create=200 upload={ust} finalize={fst} '
-                    f'artifact_id={aid} name={name}')
-          PY
+            for (const [label, version, mime, rawMime, blobCt] of variants) {
+              const name = `ct-${label}-${tag}`;
+              const [cst, ctext] = await rpc('CreateArtifact', createBody(name, version, mime, rawMime));
+              if (cst !== 200) {
+                core.info(`[${label}] create -> ${cst} ${ctext.slice(0, 180)}`);
+                continue;
+              }
+              let url;
+              try {
+                const parsed = JSON.parse(ctext);
+                url = parsed.signedUploadUrl || parsed.signed_upload_url;
+              } catch (e) { /* fall through */ }
+              if (!url) {
+                core.info(`[${label}] create -> 200 without url: ${ctext.slice(0, 180)}`);
+                continue;
+              }
+              const headers = { 'x-ms-blob-type': 'BlockBlob' };
+              if (blobCt) headers['x-ms-blob-content-type'] = blobCt;
+              const put = await fetch(url, { method: 'PUT', headers, body: payload });
+              const [fst, ftext] = await rpc('FinalizeArtifact', Buffer.from(JSON.stringify({
+                workflow_run_backend_id: runId,
+                workflow_job_run_backend_id: jobId,
+                name, size: String(payload.length), hash: `sha256:${digest}`,
+              }), 'utf8'));
+              let aid = '';
+              try {
+                const parsed = JSON.parse(ftext);
+                aid = parsed.artifactId || parsed.artifact_id || '';
+              } catch (e) { /* ignore */ }
+              core.info(`[${label}] create=200 upload=${put.status} finalize=${fst} `
+                + `artifact_id=${aid} name=${name} ${aid ? '' : ftext.slice(0, 160)}`);
+            }
