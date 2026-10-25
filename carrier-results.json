@@ -1,273 +1,83 @@
 {
-  "runId": "40176954845",
+  "runId": "40177106495",
   "repository": "HAN-BAMBO/repo-cassette-carrier",
   "winners": [],
   "summary": {
-    "total": 16,
+    "total": 8,
+    "accepted": 1,
     "odd": 0
   },
   "rows": [
     {
       "index": 0,
-      "version": 0,
-      "mime": "application/json",
-      "created": {
-        "ok": true
-      },
-      "final": {
-        "ok": true,
-        "id": "12593076218"
-      },
-      "view": {
-        "ok": true,
-        "contentType": "application/zip"
-      },
-      "isOdd": false
-    },
-    {
-      "index": 1,
-      "version": 0,
-      "mime": "application/json",
-      "created": {
-        "ok": true
-      },
-      "final": {
-        "ok": true,
-        "id": "12592612046"
-      },
-      "view": {
-        "ok": true,
-        "contentType": "application/zip"
-      },
-      "isOdd": false
-    },
-    {
-      "index": 2,
-      "version": 1,
-      "mime": "application/json",
-      "created": {
-        "ok": true
-      },
-      "final": {
-        "ok": true,
-        "id": "12592592078"
-      },
-      "view": {
-        "ok": true,
-        "contentType": "application/zip"
-      },
-      "isOdd": false
-    },
-    {
-      "index": 3,
-      "version": 1,
-      "mime": "application/json",
-      "created": {
-        "ok": true
-      },
-      "final": {
-        "ok": true,
-        "id": "12592826648"
-      },
-      "view": {
-        "ok": true,
-        "contentType": "application/zip"
-      },
-      "isOdd": false
-    },
-    {
-      "index": 4,
-      "version": 2,
-      "mime": "application/json",
-      "created": {
-        "ok": true
-      },
-      "final": {
-        "ok": true,
-        "id": "12592981340"
-      },
-      "view": {
-        "ok": true,
-        "contentType": "application/zip"
-      },
-      "isOdd": false
-    },
-    {
-      "index": 5,
-      "version": 2,
-      "mime": "application/json",
-      "created": {
-        "ok": true
-      },
-      "final": {
-        "ok": true,
-        "id": "12592801645"
-      },
-      "view": {
-        "ok": true,
-        "contentType": "application/zip"
-      },
-      "isOdd": false
-    },
-    {
-      "index": 6,
-      "version": 3,
-      "mime": "application/json",
-      "created": {
-        "ok": true
-      },
-      "final": {
-        "ok": true,
-        "id": "12592612045"
-      },
-      "view": {
-        "ok": true,
-        "contentType": "application/zip"
-      },
-      "isOdd": false
-    },
-    {
-      "index": 7,
-      "version": 3,
-      "mime": "application/json",
-      "created": {
-        "ok": true
-      },
-      "final": {
-        "ok": true,
-        "id": "12592711869"
-      },
-      "view": {
-        "ok": true,
-        "contentType": "application/zip"
-      },
-      "isOdd": false
-    },
-    {
-      "index": 8,
-      "version": 4,
-      "mime": "application/json",
-      "created": {
-        "ok": true
-      },
-      "final": {
-        "ok": true,
-        "id": "12592886510"
-      },
-      "view": {
-        "ok": true,
-        "contentType": "application/zip"
-      },
-      "isOdd": false
-    },
-    {
-      "index": 9,
-      "version": 4,
-      "mime": "application/json",
-      "created": {
-        "ok": true
-      },
-      "final": {
-        "ok": true,
-        "id": "12592901446"
-      },
-      "view": {
-        "ok": true,
-        "contentType": "application/zip"
-      },
-      "isOdd": false
-    },
-    {
-      "index": 10,
-      "version": 5,
-      "mime": "application/json",
-      "created": {
-        "ok": true
-      },
-      "final": {
-        "ok": true,
-        "id": "12593180962"
-      },
-      "view": {
-        "ok": true,
-        "contentType": "application/zip"
-      },
-      "isOdd": false
-    },
-    {
-      "index": 11,
-      "version": 5,
-      "mime": "application/json",
-      "created": {
-        "ok": true
-      },
-      "final": {
-        "ok": true,
-        "id": "12593086212"
-      },
-      "view": {
-        "ok": true,
-        "contentType": "application/zip"
-      },
-      "isOdd": false
-    },
-    {
-      "index": 12,
-      "version": 6,
-      "mime": "application/json",
-      "created": {
-        "ok": true
-      },
-      "final": {
-        "ok": true,
-        "id": "12592751763"
-      },
-      "view": {
-        "ok": true,
-        "contentType": "application/zip"
-      },
-      "isOdd": false
-    },
-    {
-      "index": 13,
-      "version": 6,
-      "mime": "application/json",
-      "created": {
-        "ok": true
-      },
-      "final": {
-        "ok": true,
-        "id": "12593136068"
-      },
-      "view": {
-        "ok": true,
-        "contentType": "application/zip"
-      },
-      "isOdd": false
-    },
-    {
-      "index": 14,
-      "version": 7,
-      "mime": "application/json",
+      "label": "omitted",
       "created": {
         "ok": false,
         "error": "Error: Failed to CreateArtifact: Received non-retryable error: Failed request: (400) Bad Request: mime_type a valid mime_type is required for this artifact version"
       }
     },
     {
-      "index": 15,
-      "version": 7,
-      "mime": "application/json",
+      "index": 1,
+      "label": "undefined",
+      "created": {
+        "ok": false,
+        "error": "Error: Failed to CreateArtifact: Received non-retryable error: Failed request: (400) Bad Request: mime_type a valid mime_type is required for this artifact version"
+      }
+    },
+    {
+      "index": 2,
+      "label": "null",
+      "created": {
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'value')"
+      }
+    },
+    {
+      "index": 3,
+      "label": "empty-wrapper",
+      "created": {
+        "ok": false,
+        "error": "Error: Failed to CreateArtifact: Received non-retryable error: Failed request: (400) Bad Request: mime_type a valid mime_type is required for this artifact version"
+      }
+    },
+    {
+      "index": 4,
+      "label": "empty-string",
+      "created": {
+        "ok": false,
+        "error": "Error: Failed to CreateArtifact: Received non-retryable error: Failed request: (400) Bad Request: mime_type a valid mime_type is required for this artifact version"
+      }
+    },
+    {
+      "index": 5,
+      "label": "space",
+      "created": {
+        "ok": false,
+        "error": "Error: Failed to CreateArtifact: Received non-retryable error: Failed request: (400) Bad Request: mime_type a valid mime_type is required for this artifact version"
+      }
+    },
+    {
+      "index": 6,
+      "label": "tab",
+      "created": {
+        "ok": false,
+        "error": "Error: Failed to CreateArtifact: Received non-retryable error: Failed request: (400) Bad Request: mime_type a valid mime_type is required for this artifact version"
+      }
+    },
+    {
+      "index": 7,
+      "label": "json",
       "created": {
         "ok": true
       },
       "final": {
         "ok": true,
-        "id": "12593200849"
+        "id": "12592672150"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "queryType": "application/json",
+        "servedType": "application/json"
       },
       "isOdd": false
     }
