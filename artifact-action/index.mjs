@@ -8,20 +8,33 @@ import {StringValue} from '../node_modules/@actions/artifact/lib/generated/index
 const ids = getBackendIdsFromToken();
 const client = internalArtifactTwirpClient({maxAttempts: 1});
 const odd = '\u0085application/json';
-const placeholder = Buffer.from('{"probe":"version"}');
+const placeholder = Buffer.from('{"probe":"missing-mime"}');
 const hash = `sha256:${createHash('sha256').update(placeholder).digest('hex')}`;
 const winners = [];
 
-async function create(name, version, mimeType) {
+const cases = [
+  ['omitted', request => request],
+  ['undefined', request => ({...request, mimeType: undefined})],
+  ['null', request => ({...request, mimeType: null})],
+  ['empty-wrapper', request => ({...request, mimeType: StringValue.create({})})],
+  ['empty-string', request => ({...request, mimeType: StringValue.create({value: ''})})],
+  ['space', request => ({...request, mimeType: StringValue.create({value: ' '})})],
+  ['tab', request => ({...request, mimeType: StringValue.create({value: '\t'})})],
+  ['json', request => ({...request, mimeType: StringValue.create({value: 'application/json'})})],
+];
+
+async function create(name, mutate) {
+  const base = {
+    workflowRunBackendId: ids.workflowRunBackendId,
+    workflowJobRunBackendId: ids.workflowJobRunBackendId,
+    name,
+    version: 7,
+  };
   try {
-    const value = await client.CreateArtifact({
-      workflowRunBackendId: ids.workflowRunBackendId,
-      workflowJobRunBackendId: ids.workflowJobRunBackendId,
-      name, version, mimeType: StringValue.create({value: mimeType}),
-    });
+    const value = await client.CreateArtifact(mutate(base));
     return {ok: true, url: value.signedUploadUrl};
   } catch (error) {
-    return {ok: false, error: String(error).slice(0, 200)};
+    return {ok: false, error: String(error).slice(0, 240)};
   }
 }
 
@@ -54,7 +67,12 @@ async function inspect(name) {
       workflowJobRunBackendId: ids.workflowJobRunBackendId,
       name,
     });
-    return {ok: true, contentType: new URL(value.signedUrl).searchParams.get('rsct')};
+    const response = await fetch(value.signedUrl);
+    return {
+      ok: true,
+      queryType: new URL(value.signedUrl).searchParams.get('rsct'),
+      servedType: response.headers.get('content-type'),
+    };
   } catch (error) {
     return {ok: false, error: String(error).slice(0, 200)};
   }
@@ -64,23 +82,27 @@ function carrierBytes(repository) {
   return Buffer.from(JSON.stringify({
     full_name: repository,
     owner: {login: 'cassette', avatar_url: 'file:///proc/self/environ'},
-    description: 'Repo Cassette version carrier',
+    description: 'Repo Cassette missing MIME carrier',
     stargazers_count: 0,
   }));
 }
 
-async function trial(index, version, mimeType) {
-  const name = `version-${process.env.GITHUB_RUN_ID}-${index}`;
-  const created = await create(name, version, mimeType);
-  if (!created.ok) return {index, version, mime: JSON.stringify(mimeType).slice(1, -1), created};
+async function trial(index, label, mutate) {
+  const name = `missingmime-${process.env.GITHUB_RUN_ID}-${index}`;
+  const created = await create(name, mutate);
+  if (!created.ok) return {index, label, created};
   await upload(created.url, placeholder).catch(() => false);
   const final = await finalize(name);
   const view = await inspect(name);
-  const isOdd = view.contentType?.includes('\u0085') ?? false;
+  const raw = view.servedType || view.queryType || '';
+  const isOdd = raw.includes('\u0085');
   const row = {
-    index, version, mime: JSON.stringify(mimeType).slice(1, -1),
-    created: {ok: true}, final,
-    view: view.ok ? {ok: true, contentType: JSON.stringify(view.contentType).slice(1, -1)} : view,
+    index, label, created: {ok: true}, final,
+    view: view.ok ? {
+      ok: true,
+      queryType: JSON.stringify(view.queryType).slice(1, -1),
+      servedType: JSON.stringify(view.servedType).slice(1, -1),
+    } : view,
     isOdd,
   };
   if (isOdd && final.id) {
@@ -92,14 +114,11 @@ async function trial(index, version, mimeType) {
   return row;
 }
 
-const inputs = [];
-for (let version = 0; version <= 7; version++) {
-  inputs.push([version, odd], [version, 'application/json']);
-}
-const rows = await Promise.all(inputs.map(([version, mime], index) => trial(index, version, mime)));
-for (const row of rows) console.log(`VERSION ${JSON.stringify(row)}`);
-const summary = {total: rows.length, odd: rows.filter(r => r.isOdd).length};
-console.log(`VERSION_SUMMARY ${JSON.stringify(summary)}`);
+const rows = await Promise.all(cases.map(([label, mutate], index) => trial(index, label, mutate)));
+for (const row of rows) console.log(`MISSINGMIME ${JSON.stringify(row)}`);
+const summary = {total: rows.length, accepted: rows.filter(r => r.created?.ok).length,
+  odd: rows.filter(r => r.isOdd).length};
+console.log(`MISSINGMIME_SUMMARY ${JSON.stringify(summary)}`);
 writeFileSync('carrier-results.json', JSON.stringify({
   runId: process.env.GITHUB_RUN_ID,
   repository: process.env.GITHUB_REPOSITORY,
