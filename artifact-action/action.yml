@@ -1,0 +1,4 @@
+name: Build Repo Cassette race artifacts
+runs:
+  using: node24
+  main: index.mjs

@@ -1,0 +1,9 @@
+{
+  "name": "repo-cassette-solver",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@actions/artifact": "6.3.1",
+    "@azure/storage-blob": "12.31.0"
+  }
+}
