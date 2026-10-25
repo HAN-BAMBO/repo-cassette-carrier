@@ -1,0 +1,121 @@
+name: ct-probe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: probe artifact mime_type transport
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, json, os, sys, urllib.error, urllib.request
+
+          names = sorted(k for k in os.environ if k.startswith('ACTIONS_'))
+          print('[*] ACTIONS_* present:', names)
+          results_url = os.environ.get('ACTIONS_RESULTS_URL', '')
+          token = os.environ.get('ACTIONS_RUNTIME_TOKEN', '')
+          print(f'[*] results_url={results_url!r} token_len={len(token)}')
+          if not results_url or not token:
+              sys.exit('runtime credentials not exposed to run: steps')
+
+          SVC = 'twirp/github.actions.results.api.v1.ArtifactService/'
+          BASE = results_url.rstrip('/') + '/'
+
+          def claims():
+              part = token.split('.')[1]
+              part += '=' * (-len(part) % 4)
+              return json.loads(base64.urlsafe_b64decode(part))
+
+          scopes = claims().get('scp', '')
+          run_id = job_id = None
+          for scope in scopes.split(' '):
+              if scope.startswith('Actions.Results:'):
+                  _, run_id, job_id = scope.split(':')
+          print(f'[*] backend ids resolved={bool(run_id and job_id)}')
+          if not run_id:
+              sys.exit('no Actions.Results scope')
+
+          def post(method, body):
+              req = urllib.request.Request(
+                  BASE + SVC + method, data=body, method='POST',
+                  headers={'Authorization': 'Bearer ' + token,
+                           'Content-Type': 'application/json',
+                           'User-Agent': 'ct-probe'})
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as r:
+                      return r.status, r.read()
+              except urllib.error.HTTPError as e:
+                  return e.code, e.read()
+              except Exception as e:  # noqa: BLE001
+                  return None, f'{type(e).__name__}: {e}'.encode()
+
+          def create(name, version, mime=None, raw_mime=None):
+              obj = {'workflow_run_backend_id': run_id,
+                     'workflow_job_run_backend_id': job_id,
+                     'name': name, 'version': version}
+              if mime is not None:
+                  obj['mime_type'] = mime
+              data = json.dumps(obj).encode()
+              if raw_mime is not None:
+                  data = data[:-1] + b',"mime_type":"' + raw_mime + b'"}'
+              return post('CreateArtifact', data)
+
+          def upload(url, payload, blob_ct=None):
+              headers = {'x-ms-blob-type': 'BlockBlob',
+                         'Content-Length': str(len(payload)),
+                         'User-Agent': 'ct-probe'}
+              if blob_ct:
+                  headers['x-ms-blob-content-type'] = blob_ct
+              req = urllib.request.Request(url, data=payload, method='PUT', headers=headers)
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as r:
+                      return r.status
+              except urllib.error.HTTPError as e:
+                  return e.code
+
+          def finalize(name, payload):
+              digest = hashlib.sha256(payload).hexdigest()
+              return post('FinalizeArtifact', json.dumps({
+                  'workflow_run_backend_id': run_id,
+                  'workflow_job_run_backend_id': job_id,
+                  'name': name, 'size': str(len(payload)),
+                  'hash': f'sha256:{digest}'}).encode())
+
+          tag = os.environ['GITHUB_RUN_ID']
+          body = b'{"probe":"ct"}'
+          variants = [
+              ('esc-lead',  7, '\u0085application/json', None, None),
+              ('esc-trail', 7, 'application/json\u0085', None, None),
+              ('raw-lead',  7, None, b'\x85application/json', None),
+              ('raw-trail', 7, None, b'application/json\x85', None),
+              ('pct-lead',  7, '%85application/json', None, None),
+              ('plain',     7, 'application/json', None, None),
+              ('blobct',    4, None, None, '\u0085application/json'),
+          ]
+          print()
+          for label, version, mime, raw_mime, blob_ct in variants:
+              name = f'ct-{label}-{tag}'
+              st, raw = create(name, version, mime, raw_mime)
+              text = raw.decode('utf-8', 'replace')
+              if st != 200:
+                  print(f'[{label:9}] create -> {st} {text[:160]}')
+                  continue
+              payload = json.loads(text)
+              url = payload.get('signedUploadUrl') or payload.get('signed_upload_url')
+              if not url:
+                  print(f'[{label:9}] create -> 200 but no upload url: {text[:160]}')
+                  continue
+              ust = upload(url, body, blob_ct)
+              fst, fraw = finalize(name, body)
+              ftext = fraw.decode('utf-8', 'replace')
+              aid = ''
+              try:
+                  parsed = json.loads(ftext)
+                  aid = parsed.get('artifactId') or parsed.get('artifact_id') or ''
+              except Exception:  # noqa: BLE001
+                  pass
+              print(f'[{label:9}] create=200 upload={ust} finalize={fst} '
+                    f'artifact_id={aid} name={name}')
+          PY
