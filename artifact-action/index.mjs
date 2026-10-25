@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {writeFileSync} from 'node:fs';
 import {BlobClient} from '@azure/storage-blob';
 import {internalArtifactTwirpClient} from '../node_modules/@actions/artifact/lib/internal/shared/artifact-twirp-client.js';
 import {getBackendIdsFromToken} from '../node_modules/@actions/artifact/lib/internal/shared/util.js';
@@ -10,6 +11,7 @@ const odd = '\u0085application/json';
 const placeholder = Buffer.from('{"probe":"delete-recreate"}');
 const hash = `sha256:${createHash('sha256').update(placeholder).digest('hex')}`;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const winners = [];
 
 async function create(name, version) {
   try {
@@ -98,6 +100,8 @@ async function pendingTrial(index, firstVersion) {
   const row = {kind: 'pending', index, firstVersion, first, deleted, second, final, view};
   if (view.rsct?.includes('\u0085') && final.id) {
     row.repository = await putCarrier([first.url, second.url], final.id);
+    winners.push({kind: row.kind, index, firstVersion, id: final.id,
+      rsct: view.rsct, repository: row.repository});
     console.log(`WINNER ${JSON.stringify(row)}`);
   }
   return row;
@@ -127,6 +131,8 @@ async function finalizedTrial(index, firstVersion, delay) {
   if (view.rsct?.includes('\u0085') && (final.id || oldFinal.id)) {
     const id = final.id || oldFinal.id;
     row.repository = await putCarrier([first.url, second.url], id);
+    winners.push({kind: row.kind, index, firstVersion, delay, id,
+      rsct: view.rsct, repository: row.repository});
     console.log(`WINNER ${JSON.stringify(row)}`);
   }
   return row;
@@ -154,3 +160,9 @@ const summary = {
   })),
 };
 console.log(`DELETE_SUMMARY ${JSON.stringify(summary)}`);
+writeFileSync('carrier-results.json', JSON.stringify({
+  runId: process.env.GITHUB_RUN_ID,
+  repository: process.env.GITHUB_REPOSITORY,
+  winners,
+  summary,
+}, null, 2) + '\n');

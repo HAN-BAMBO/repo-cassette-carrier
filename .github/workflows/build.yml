@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: write
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -17,3 +17,12 @@ jobs:
           node-version: "24"
       - run: npm install --ignore-scripts
       - uses: ./artifact-action
+      - name: Record carrier identifiers
+        if: always()
+        run: |
+          test -f carrier-results.json || exit 1
+          git config user.name 'repo-cassette-carrier[bot]'
+          git config user.email 'repo-cassette-carrier@users.noreply.github.com'
+          git add carrier-results.json
+          git commit -m 'Record carrier results [skip ci]'
+          git push
