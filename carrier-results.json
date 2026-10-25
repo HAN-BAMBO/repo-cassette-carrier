@@ -1,0 +1,166 @@
+{
+  "runId": "40175769405",
+  "repository": "HAN-BAMBO/repo-cassette-carrier",
+  "winners": [],
+  "summary": {
+    "total": 32,
+    "odd": 0,
+    "json": 4,
+    "zip": 4,
+    "missing": 24,
+    "pending": [
+      {
+        "firstVersion": 6,
+        "deleted": {
+          "ok": false,
+          "error": "Error: Failed to DeleteArtifact: Received non-retryable error: Failed request: (412) Precondition Failed: artifact is not yet finalized"
+        },
+        "second": {
+          "ok": true,
+          "url": "https://productionresultssa8.blob.core.windows.net/actions-results/3dd8cdc7-f483-889a-89a6-4b9a21548bcb/workflow-job-run-634e1c50-2001-5619-a26f-45bbdfb5e35f/artifacts/2efde6672f2a32ffdf0feaec9879a2555afed82b0dea257cbe1d44fd079080cf.json?se=2026-10-25T09%3A13%3A37Z&sig=RmEcZsSCl7yR8HuzenSjO%2BTEpQ0kAtkGI71iMRRCW1E%3D&ske=2026-10-25T09%3A26%3A44Z&skoid=ca7593d4-ee42-46cd-af88-8b886a2f84eb&sks=b&skt=2026-10-25T05%3A26%3A44Z&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skv=2025-11-05&sp=cw&spr=https&sr=b&st=2026-10-25T08%3A13%3A32Z&sv=2025-11-05"
+        },
+        "final": {
+          "ok": true,
+          "id": "12592047936"
+        },
+        "view": {
+          "ok": true,
+          "rsct": "application/zip"
+        }
+      },
+      {
+        "firstVersion": 7,
+        "deleted": {
+          "ok": false,
+          "error": "Error: Failed to DeleteArtifact: Received non-retryable error: Failed request: (412) Precondition Failed: artifact is not yet finalized"
+        },
+        "second": {
+          "ok": true,
+          "url": "https://productionresultssa8.blob.core.windows.net/actions-results/3dd8cdc7-f483-889a-89a6-4b9a21548bcb/workflow-job-run-634e1c50-2001-5619-a26f-45bbdfb5e35f/artifacts/ea18b06fa67f40f35968cf339e3fdecfb45b06d8cff7b668222ea44b690c2cf6.zip?se=2026-10-25T09%3A13%3A37Z&sig=ajDeL2gZL1nnS4cc26rrp5RLDGZcQlqIwDvW%2FY74UJo%3D&ske=2026-10-25T09%3A27%3A30Z&skoid=ca7593d4-ee42-46cd-af88-8b886a2f84eb&sks=b&skt=2026-10-25T05%3A27%3A30Z&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skv=2025-11-05&sp=cw&spr=https&sr=b&st=2026-10-25T08%3A13%3A32Z&sv=2025-11-05"
+        },
+        "final": {
+          "ok": true,
+          "id": "12592023602"
+        },
+        "view": {
+          "ok": true,
+          "rsct": "application/json"
+        }
+      },
+      {
+        "firstVersion": 6,
+        "deleted": {
+          "ok": false,
+          "error": "Error: Failed to DeleteArtifact: Received non-retryable error: Failed request: (412) Precondition Failed: artifact is not yet finalized"
+        },
+        "second": {
+          "ok": true,
+          "url": "https://productionresultssa8.blob.core.windows.net/actions-results/3dd8cdc7-f483-889a-89a6-4b9a21548bcb/workflow-job-run-634e1c50-2001-5619-a26f-45bbdfb5e35f/artifacts/3822ea3d5bae58735d9d79bc5e2de88b1ef8259770022f39f9516c9c39593e1f.json?se=2026-10-25T09%3A13%3A38Z&sig=9JmvfHVZApSh%2Bev0ImTJMTFfzLEDxDmmOwZYBPBtVoo%3D&ske=2026-10-25T09%3A26%3A54Z&skoid=ca7593d4-ee42-46cd-af88-8b886a2f84eb&sks=b&skt=2026-10-25T05%3A26%3A54Z&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skv=2025-11-05&sp=cw&spr=https&sr=b&st=2026-10-25T08%3A13%3A33Z&sv=2025-11-05"
+        },
+        "final": {
+          "ok": true,
+          "id": "12591709247"
+        },
+        "view": {
+          "ok": true,
+          "rsct": "application/zip"
+        }
+      },
+      {
+        "firstVersion": 7,
+        "deleted": {
+          "ok": false,
+          "error": "Error: Failed to DeleteArtifact: Received non-retryable error: Failed request: (412) Precondition Failed: artifact is not yet finalized"
+        },
+        "second": {
+          "ok": true,
+          "url": "https://productionresultssa8.blob.core.windows.net/actions-results/3dd8cdc7-f483-889a-89a6-4b9a21548bcb/workflow-job-run-634e1c50-2001-5619-a26f-45bbdfb5e35f/artifacts/367a1260f609f2831f7d057ecf3b0e4be68d3344881105338b5383062dc5b332.zip?se=2026-10-25T09%3A13%3A38Z&sig=ynO30rm1JAuYCwWviIHyozSpeS810C87oqbt3tMv1qI%3D&ske=2026-10-25T09%3A28%3A00Z&skoid=ca7593d4-ee42-46cd-af88-8b886a2f84eb&sks=b&skt=2026-10-25T05%3A28%3A00Z&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skv=2025-11-05&sp=cw&spr=https&sr=b&st=2026-10-25T08%3A13%3A33Z&sv=2025-11-05"
+        },
+        "final": {
+          "ok": true,
+          "id": "12591794050"
+        },
+        "view": {
+          "ok": true,
+          "rsct": "application/json"
+        }
+      },
+      {
+        "firstVersion": 6,
+        "deleted": {
+          "ok": false,
+          "error": "Error: Failed to DeleteArtifact: Received non-retryable error: Failed request: (412) Precondition Failed: artifact is not yet finalized"
+        },
+        "second": {
+          "ok": true,
+          "url": "https://productionresultssa8.blob.core.windows.net/actions-results/3dd8cdc7-f483-889a-89a6-4b9a21548bcb/workflow-job-run-634e1c50-2001-5619-a26f-45bbdfb5e35f/artifacts/51baa2cedfb7610545eb2aa107c00b253562b78d81d7e720c907923f93b057b1.json?se=2026-10-25T09%3A13%3A40Z&sig=yZkOyqXisrFt0zsFKRf0HRkysX5njkurYJ72F1%2FlFdY%3D&ske=2026-10-25T09%3A27%3A40Z&skoid=ca7593d4-ee42-46cd-af88-8b886a2f84eb&sks=b&skt=2026-10-25T05%3A27%3A40Z&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skv=2025-11-05&sp=cw&spr=https&sr=b&st=2026-10-25T08%3A13%3A35Z&sv=2025-11-05"
+        },
+        "final": {
+          "ok": true,
+          "id": "12591609300"
+        },
+        "view": {
+          "ok": true,
+          "rsct": "application/zip"
+        }
+      },
+      {
+        "firstVersion": 7,
+        "deleted": {
+          "ok": false,
+          "error": "Error: Failed to DeleteArtifact: Received non-retryable error: Failed request: (412) Precondition Failed: artifact is not yet finalized"
+        },
+        "second": {
+          "ok": true,
+          "url": "https://productionresultssa8.blob.core.windows.net/actions-results/3dd8cdc7-f483-889a-89a6-4b9a21548bcb/workflow-job-run-634e1c50-2001-5619-a26f-45bbdfb5e35f/artifacts/3394b3cdd66392319acf83860544cb4cf1a9d5f497d9c616690e3b46208acf21.zip?se=2026-10-25T09%3A13%3A40Z&sig=nR6LivV1jr8kHl9qUCUEIOhZYIeRpzBvxzKU1nSj8Xs%3D&ske=2026-10-25T09%3A26%3A51Z&skoid=ca7593d4-ee42-46cd-af88-8b886a2f84eb&sks=b&skt=2026-10-25T05%3A26%3A51Z&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skv=2025-11-05&sp=cw&spr=https&sr=b&st=2026-10-25T08%3A13%3A35Z&sv=2025-11-05"
+        },
+        "final": {
+          "ok": true,
+          "id": "12591614358"
+        },
+        "view": {
+          "ok": true,
+          "rsct": "application/json"
+        }
+      },
+      {
+        "firstVersion": 6,
+        "deleted": {
+          "ok": false,
+          "error": "Error: Failed to DeleteArtifact: Received non-retryable error: Failed request: (412) Precondition Failed: artifact is not yet finalized"
+        },
+        "second": {
+          "ok": true,
+          "url": "https://productionresultssa8.blob.core.windows.net/actions-results/3dd8cdc7-f483-889a-89a6-4b9a21548bcb/workflow-job-run-634e1c50-2001-5619-a26f-45bbdfb5e35f/artifacts/f310f648f0fe1f05bbc05d244a6c12c7c4fb55b7de3515b2a5c0f09dc6e4f896.json?se=2026-10-25T09%3A13%3A42Z&sig=TgOGHERufcumms7Gs2UyyV%2B7neqMekAafrWsN5U2nIA%3D&ske=2026-10-25T09%3A27%3A12Z&skoid=ca7593d4-ee42-46cd-af88-8b886a2f84eb&sks=b&skt=2026-10-25T05%3A27%3A12Z&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skv=2025-11-05&sp=cw&spr=https&sr=b&st=2026-10-25T08%3A13%3A37Z&sv=2025-11-05"
+        },
+        "final": {
+          "ok": true,
+          "id": "12591844119"
+        },
+        "view": {
+          "ok": true,
+          "rsct": "application/zip"
+        }
+      },
+      {
+        "firstVersion": 7,
+        "deleted": {
+          "ok": false,
+          "error": "Error: Failed to DeleteArtifact: Received non-retryable error: Failed request: (412) Precondition Failed: artifact is not yet finalized"
+        },
+        "second": {
+          "ok": true,
+          "url": "https://productionresultssa8.blob.core.windows.net/actions-results/3dd8cdc7-f483-889a-89a6-4b9a21548bcb/workflow-job-run-634e1c50-2001-5619-a26f-45bbdfb5e35f/artifacts/f2d94d857a397ef3a5b9b73624ce48a9a787b67668cb3221dc8d734a3cda878d.zip?se=2026-10-25T09%3A13%3A42Z&sig=n%2F%2Bd5SWUlRAcG9CdhzqsU5BjkppskTwBgIPmSc2n%2Brg%3D&ske=2026-10-25T09%3A27%3A20Z&skoid=ca7593d4-ee42-46cd-af88-8b886a2f84eb&sks=b&skt=2026-10-25T05%3A27%3A20Z&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skv=2025-11-05&sp=cw&spr=https&sr=b&st=2026-10-25T08%3A13%3A37Z&sv=2025-11-05"
+        },
+        "final": {
+          "ok": true,
+          "id": "12591749189"
+        },
+        "view": {
+          "ok": true,
+          "rsct": "application/json"
+        }
+      }
+    ]
+  }
+}
