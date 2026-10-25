@@ -1,5 +1,5 @@
 {
-  "runId": "40198256959",
+  "runId": "40198712023",
   "repository": "HAN-BAMBO/repo-cassette-carrier",
   "winners": [],
   "summary": {
@@ -19,11 +19,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600514398"
+        "id": "12600674747"
       },
       "view": {
         "ok": true,
-        "contentType": "application/zip"
+        "contentType": "application/json"
       },
       "isOdd": false
     },
@@ -37,7 +37,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600579239"
+        "id": "12600684524"
       },
       "view": {
         "ok": true,
@@ -55,11 +55,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600184966"
+        "id": "12600804349"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -73,7 +73,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600614065"
+        "id": "12601530197"
       },
       "view": {
         "ok": true,
@@ -91,7 +91,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600559262"
+        "id": "12600694772"
       },
       "view": {
         "ok": true,
@@ -109,11 +109,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600748557"
+        "id": "12600639927"
       },
       "view": {
         "ok": true,
-        "contentType": "application/zip"
+        "contentType": "application/json"
       },
       "isOdd": false
     },
@@ -127,7 +127,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600723794"
+        "id": "12600659793"
       },
       "view": {
         "ok": true,
@@ -145,7 +145,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600214917"
+        "id": "12601375307"
       },
       "view": {
         "ok": true,
@@ -163,11 +163,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600444485"
+        "id": "12601340373"
       },
       "view": {
         "ok": true,
-        "contentType": "application/zip"
+        "contentType": "application/json"
       },
       "isOdd": false
     },
@@ -181,7 +181,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600659002"
+        "id": "12600724586"
       },
       "view": {
         "ok": true,
@@ -199,11 +199,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600409627"
+        "id": "12601445265"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -217,7 +217,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600793517"
+        "id": "12600823254"
       },
       "view": {
         "ok": true,
@@ -235,11 +235,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600673941"
+        "id": "12600916006"
       },
       "view": {
         "ok": true,
-        "contentType": "application/zip"
+        "contentType": "application/json"
       },
       "isOdd": false
     },
@@ -253,7 +253,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600494389"
+        "id": "12601540023"
       },
       "view": {
         "ok": true,
@@ -271,7 +271,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600419510"
+        "id": "12601340374"
       },
       "view": {
         "ok": true,
@@ -289,7 +289,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600793516"
+        "id": "12600916007"
       },
       "view": {
         "ok": true,
@@ -307,11 +307,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600464463"
+        "id": "12601425285"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -325,11 +325,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600624213"
+        "id": "12601475185"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -343,11 +343,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600609239"
+        "id": "12600818177"
       },
       "view": {
         "ok": true,
-        "contentType": "application/zip"
+        "contentType": "application/json"
       },
       "isOdd": false
     },
@@ -361,11 +361,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600319604"
+        "id": "12601400272"
       },
       "view": {
         "ok": true,
-        "contentType": "application/zip"
+        "contentType": "application/json"
       },
       "isOdd": false
     },
@@ -379,7 +379,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600614064"
+        "id": "12601210488"
       },
       "view": {
         "ok": true,
@@ -397,11 +397,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600748558"
+        "id": "12600925914"
       },
       "view": {
         "ok": true,
-        "contentType": "application/zip"
+        "contentType": "application/json"
       },
       "isOdd": false
     },
@@ -415,11 +415,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600514400"
+        "id": "12601585024"
       },
       "view": {
         "ok": true,
-        "contentType": "application/zip"
+        "contentType": "application/json"
       },
       "isOdd": false
     },
@@ -433,11 +433,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600773563"
+        "id": "12601520267"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -451,11 +451,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600793515"
+        "id": "12601530198"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -469,7 +469,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600659003"
+        "id": "12600804351"
       },
       "view": {
         "ok": true,
@@ -487,11 +487,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600664132"
+        "id": "12601590040"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -505,7 +505,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600529373"
+        "id": "12601210489"
       },
       "view": {
         "ok": true,
@@ -523,11 +523,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600564354"
+        "id": "12601645019"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -541,7 +541,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600229750"
+        "id": "12601430262"
       },
       "view": {
         "ok": true,
@@ -559,7 +559,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600807870"
+        "id": "12601390293"
       },
       "view": {
         "ok": true,
@@ -577,7 +577,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600975028"
+        "id": "12600789376"
       },
       "view": {
         "ok": true,
@@ -595,7 +595,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600975027"
+        "id": "12600804350"
       },
       "view": {
         "ok": true,
@@ -613,7 +613,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600184967"
+        "id": "12600639928"
       },
       "view": {
         "ok": true,
@@ -631,11 +631,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600559264"
+        "id": "12601405300"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -649,7 +649,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600289662"
+        "id": "12601465241"
       },
       "view": {
         "ok": true,
@@ -667,11 +667,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600718819"
+        "id": "12601400273"
       },
       "view": {
         "ok": true,
-        "contentType": "application/zip"
+        "contentType": "application/json"
       },
       "isOdd": false
     },
@@ -685,7 +685,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600609240"
+        "id": "12600664958"
       },
       "view": {
         "ok": true,
@@ -703,7 +703,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600708769"
+        "id": "12601645020"
       },
       "view": {
         "ok": true,
@@ -721,7 +721,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600673942"
+        "id": "12600794325"
       },
       "view": {
         "ok": true,
@@ -739,7 +739,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600294680"
+        "id": "12600749326"
       },
       "view": {
         "ok": true,
@@ -757,11 +757,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600693950"
+        "id": "12601545110"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -775,11 +775,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600559265"
+        "id": "12600629908"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -793,7 +793,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600454479"
+        "id": "12601405301"
       },
       "view": {
         "ok": true,
@@ -811,7 +811,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600454478"
+        "id": "12600614828"
       },
       "view": {
         "ok": true,
@@ -829,11 +829,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600723795"
+        "id": "12601080599"
       },
       "view": {
         "ok": true,
-        "contentType": "application/zip"
+        "contentType": "application/json"
       },
       "isOdd": false
     },
@@ -847,11 +847,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600289663"
+        "id": "12600659794"
       },
       "view": {
         "ok": true,
-        "contentType": "application/zip"
+        "contentType": "application/json"
       },
       "isOdd": false
     },
@@ -865,7 +865,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600723796"
+        "id": "12601545111"
       },
       "view": {
         "ok": true,
@@ -883,11 +883,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600524384"
+        "id": "12600644941"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -901,7 +901,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600718820"
+        "id": "12600659795"
       },
       "view": {
         "ok": true,
@@ -919,7 +919,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600703755"
+        "id": "12601430263"
       },
       "view": {
         "ok": true,
@@ -937,7 +937,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600659004"
+        "id": "12601545112"
       },
       "view": {
         "ok": true,
@@ -955,11 +955,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600319605"
+        "id": "12600639929"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -973,7 +973,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600693951"
+        "id": "12600794326"
       },
       "view": {
         "ok": true,
@@ -991,11 +991,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600773564"
+        "id": "12601530199"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -1009,11 +1009,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600733852"
+        "id": "12601445266"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -1027,7 +1027,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600708771"
+        "id": "12600644942"
       },
       "view": {
         "ok": true,
@@ -1045,7 +1045,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600294681"
+        "id": "12600684526"
       },
       "view": {
         "ok": true,
@@ -1063,7 +1063,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600733853"
+        "id": "12600719618"
       },
       "view": {
         "ok": true,
@@ -1081,11 +1081,11 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600384549"
+        "id": "12600664959"
       },
       "view": {
         "ok": true,
-        "contentType": "application/json"
+        "contentType": "application/zip"
       },
       "isOdd": false
     },
@@ -1099,7 +1099,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600793518"
+        "id": "12601430264"
       },
       "view": {
         "ok": true,
@@ -1117,7 +1117,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600599310"
+        "id": "12600759487"
       },
       "view": {
         "ok": true,
@@ -1135,7 +1135,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600733854"
+        "id": "12601640003"
       },
       "view": {
         "ok": true,
@@ -1153,7 +1153,7 @@
       ],
       "final": {
         "ok": true,
-        "id": "12600708770"
+        "id": "12601505207"
       },
       "view": {
         "ok": true,
