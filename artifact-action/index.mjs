@@ -13,20 +13,25 @@ const hash = `sha256:${createHash('sha256').update(placeholder).digest('hex')}`;
 // Candidate CreateArtifact mimeType values. GitHub echoes the stored mimeType into
 // the SAS `rsct` override, so anything that survives validation decides the
 // Content-Type the CTF app and the postcard each parse.
-const CANDIDATES = [
+const MIMES = [
   'application/json',
   'application/json%85',
   '%85application/json',
-  'application/json%1f',
-  '%1fapplication/json',
-  '\u0085application/json',
   'application/json\u0085',
-  'application/json%20',
-  'application/json%c2%85',
-  'application/json%2585',
-  'application/json&rsct=application%2Fjson%85',
-  'application/json%0a',
+  'application/json%1f',
 ];
+const VERSIONS = [4, 6, 7, 8];
+const CANDIDATES = [];
+for (const version of VERSIONS) {
+  for (const mimeType of MIMES) {
+    CANDIDATES.push({version, mimeType, twice: false});
+  }
+}
+for (const version of [6, 7]) {
+  for (const mimeType of ['application/json', 'application/json%85']) {
+    CANDIDATES.push({version, mimeType, twice: true});
+  }
+}
 
 // Characters str.strip() removes but String.prototype.trim() keeps, and vice versa.
 const PY_SPACE = new Set([...'\t\n\u000b\f\r\u001c\u001d\u001e\u001f \u0085      　',
@@ -49,13 +54,13 @@ const escape = value => value === null || value === undefined
   : JSON.stringify(value).slice(1, -1).replace(/[\u0080-￿]/g,
     ch => `\\u${ch.charCodeAt(0).toString(16).padStart(4, '0')}`);
 
-async function create(name, mimeType) {
+async function create(name, mimeType, version) {
   try {
     const value = await client.CreateArtifact({
       workflowRunBackendId: ids.workflowRunBackendId,
       workflowJobRunBackendId: ids.workflowJobRunBackendId,
       name,
-      version: 4,
+      version,
       mimeType: StringValue.create({value: mimeType}),
     });
     return {ok: true, url: value.signedUploadUrl};
@@ -124,15 +129,17 @@ function carrierBytes(repository) {
   }));
 }
 
-async function trial(index, mimeType) {
+async function trial(index, {version, mimeType, twice}) {
   const name = `cassette-${process.env.GITHUB_RUN_ID}-${index}`;
-  const created = await create(name, mimeType);
+  const first = twice ? await create(name, mimeType, version) : null;
+  const created = await create(name, mimeType, version);
   await upload(created.url, placeholder).catch(() => false);
   const final = await finalize(name);
   const view = await inspect(name);
   const probe = await served(view.url);
   const row = {
-    index, name, mimeType: escape(mimeType), id: final.id ?? null,
+    index, name, version, twice, mimeType: escape(mimeType), id: final.id ?? null,
+    firstError: first && !first.ok ? first.error : undefined,
     createError: created.ok ? undefined : created.error,
     finalError: final.ok ? undefined : final.error,
     viewError: view.ok ? undefined : view.error,
@@ -160,7 +167,7 @@ async function trial(index, mimeType) {
 const rows = [];
 for (let i = 0; i < CANDIDATES.length; i += 4) {
   rows.push(...await Promise.all(
-    CANDIDATES.slice(i, i + 4).map((mime, offset) => trial(i + offset, mime)),
+    CANDIDATES.slice(i, i + 4).map((entry, offset) => trial(i + offset, entry)),
   ));
 }
 const winners = rows.filter(row => row.differential && row.id && row.carrierPlaced);
